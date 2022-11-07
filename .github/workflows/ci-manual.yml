@@ -1,0 +1,42 @@
+name: CI Composite Workflow - Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_targets:
+        description: "aliyun/*, choose single one if go live to prod|staging"
+        default: "aliyun/dev"
+        required: true
+
+jobs:
+  ci_job:
+    runs-on:
+      - self-hosted
+      - ubuntu-lts
+      - ali
+    name: ci job | env - ${{ github.event.inputs.deployment_targets }} | branch - ${{ github.ref_name }}
+    steps:
+    # - run: |
+    #     download_url="https://aid-devops.oss-cn-shanghai.aliyuncs.com/jdk-8u341-linux-x64.tar.gz"
+    #     wget -O $RUNNER_TEMP/java_package.tar.gz $download_url
+    #     echo $RUNNER_TEMP
+    #     pwd
+    - uses: actions/checkout@v3
+    - name: Cache local Maven repository
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '8'
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.8.2
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
